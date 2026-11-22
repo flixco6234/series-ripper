@@ -1,0 +1,21 @@
+services:
+  series-ripper:
+    image: ghcr.io/GITHUB_USER/series-ripper:latest   # or build locally: replace with `build: .`
+    container_name: series-ripper
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./config:/config
+      - ./output:/output            # your TV library (Unraid: /mnt/user/media/Serien)
+      # - /mnt/cache/rip-temp:/temp # optional: rips in progress go here instead
+    devices:
+      # Find yours with `lsscsi -g` (last two columns of the optical drive's line).
+      # The /dev/sgN one is required - MakeMKV doesn't see the drive without it.
+      - /dev/sg2:/dev/sg2
+      - /dev/sr0:/dev/sr0
+    environment:
+      - MAKEMKV_KEY=BETA            # or your purchased key
+      - PUID=99
+      - PGID=100
+      - UMASK=000
+    restart: unless-stopped

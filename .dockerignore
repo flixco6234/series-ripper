@@ -1,0 +1,11 @@
+**/__pycache__/
+**/*.pyc
+.git
+.github
+.gitignore
+README.md
+docker-compose.yml
+unraid
+tests
+config
+output
