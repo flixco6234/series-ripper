@@ -85,13 +85,15 @@ registry first. A free GitHub account builds and hosts it for you:
    ```bash
    for d in /sys/class/scsi_generic/sg*; do [ "$(cat $d/device/type)" = 5 ] && echo "/dev/$(basename $d)  /dev/$(ls $d/device/block)"; done
    ```
-5. **Add the template:** *Docker tab → Docker Repositories / Template
-   repositories* (under *Settings → Docker* on some Unraid versions) → add
-   `https://github.com/flixco6234/series-ripper` → Save. Then *Docker →
-   Add Container → Template:* pick **series-ripper**.
-   Without step 5, download `unraid/series-ripper.xml` to
-   `/boot/config/plugins/dockerMan/templates-user/my-series-ripper.xml` on the
-   flash drive and pick it from the same list.
+5. **Add the template:** in the Unraid terminal, download it into the folder
+   where Unraid keeps your own templates:
+   ```bash
+   wget -O /boot/config/plugins/dockerMan/templates-user/my-series-ripper.xml https://raw.githubusercontent.com/flixco6234/series-ripper/main/unraid/series-ripper.xml
+   ```
+   Then *Docker tab → Add Container → Template:* pick **series-ripper**
+   (under "User templates"). Don't use the old "Template repositories"
+   setting: current Unraid versions ignore it, so templates added there
+   never show up.
 6. In the template, set:
    - **Optical drive - SCSI generic device**: the `/dev/sgN` from step 4. This
      one is **required**; MakeMKV doesn't see the drive without it.
