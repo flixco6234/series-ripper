@@ -64,16 +64,18 @@ Once the drive is connected, the MakeMKV log shows whether LibreDrive is active.
 Unraid installs containers from a published image, so the image has to be on a
 registry first. A free GitHub account builds and hosts it for you:
 
-1. **Create a GitHub repository** called `series-ripper` and upload this folder
-   to it (the `.github` folder included). On every push, GitHub Actions runs the
-   tests, builds the image and publishes it as
-   `ghcr.io/<your-github-user>/series-ripper:latest`. It also rebuilds weekly.
+1. **Publish this folder as the public GitHub repository
+   `flixco6234/series-ripper`.** With GitHub Desktop: *File → Add local
+   repository* → this folder → "create a repository" → *Publish repository*,
+   with "Keep this code private" unticked. On every push, GitHub Actions
+   runs the tests, builds the image and publishes it as
+   `ghcr.io/flixco6234/series-ripper:latest`. It also rebuilds weekly.
+   Watch the first build (about 10 minutes) in the repository's *Actions* tab.
 2. **Make the image public:** on GitHub open *your profile → Packages →
    series-ripper → Package settings → Change visibility → Public*. Unraid can't
    pull private images without extra setup.
-3. **Fill in the template:** in `unraid/series-ripper.xml` (and
-   `docker-compose.yml`) replace `GITHUB_USER` with your GitHub user name, all
-   lowercase, and push that change too.
+3. The template and `docker-compose.yml` already point at `flixco6234`. If the
+   repository ever moves to another account, change it in both files.
 4. **Find your drive's devices** in the Unraid terminal (top right, `>_`):
    ```bash
    lsscsi -g
@@ -85,7 +87,7 @@ registry first. A free GitHub account builds and hosts it for you:
    ```
 5. **Add the template:** *Docker tab → Docker Repositories / Template
    repositories* (under *Settings → Docker* on some Unraid versions) → add
-   `https://github.com/<your-github-user>/series-ripper` → Save. Then *Docker →
+   `https://github.com/flixco6234/series-ripper` → Save. Then *Docker →
    Add Container → Template:* pick **series-ripper**.
    Without step 5, download `unraid/series-ripper.xml` to
    `/boot/config/plugins/dockerMan/templates-user/my-series-ripper.xml` on the
