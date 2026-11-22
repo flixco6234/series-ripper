@@ -11,8 +11,8 @@ Serien/Kare Kano/Season 0/Kare Kano - S00E01.mkv          (Special)
 
 The season folders can also be `Season 01`, or left out (Settings → Folder layout).
 
-It runs as a Docker container with a web UI, made for Unraid. This is the
-server version of the Windows "DVD Series Ripper" in the parent folder.
+It runs as a Docker container with a web UI, made for Unraid. It started as a
+server version of a Windows "DVD Series Ripper" script.
 
 - **Manual Rip:** scan a disc, check the proposed episode numbers, rip.
 - **Automatic Mode:** insert a disc and walk away. It scans and rips on its own,
@@ -69,95 +69,16 @@ as of November 2026:
 
 Once the drive is connected, the MakeMKV log shows whether LibreDrive is active.
 
-## Install on Unraid
+### Drive access
 
-Unraid installs containers from a published image, so the image has to be on a
-registry first. A free GitHub account builds and hosts it for you:
+MakeMKV on Linux finds a drive only through its SCSI generic device
+(`/dev/sgN`), so pass that to the container, plus the `/dev/srN` device for
+ejecting. `lsscsi -g` on the host shows both at the end of the drive's line.
+The drive must be connected when the container starts. A USB drive can get a
+different number after being re-plugged.
 
-1. **Publish this folder as the public GitHub repository
-   `flixco6234/series-ripper`.** With GitHub Desktop: *File → Add local
-   repository* → this folder → "create a repository" → *Publish repository*,
-   with "Keep this code private" unticked. On every push, GitHub Actions
-   runs the tests, builds the image and publishes it as
-   `ghcr.io/flixco6234/series-ripper:latest`. It also rebuilds weekly.
-   Watch the first build (about 10 minutes) in the repository's *Actions* tab.
-2. **Make the image public:** on GitHub open *your profile → Packages →
-   series-ripper → Package settings → Change visibility → Public*. Unraid can't
-   pull private images without extra setup.
-3. The template and `docker-compose.yml` already point at `flixco6234`. If the
-   repository ever moves to another account, change it in both files.
-4. **Find your drive's devices** in the Unraid terminal (top right, `>_`):
-   ```bash
-   lsscsi -g
-   ```
-   The optical drive's line ends with two devices, for example `/dev/sr0  /dev/sg5`.
-   If `lsscsi` isn't there, this does the same:
-   ```bash
-   for d in /sys/class/scsi_generic/sg*; do [ "$(cat $d/device/type)" = 5 ] && echo "/dev/$(basename $d)  /dev/$(ls $d/device/block)"; done
-   ```
-5. **Add the template:** in the Unraid terminal, download it into the folder
-   where Unraid keeps your own templates:
-   ```bash
-   wget -O /boot/config/plugins/dockerMan/templates-user/my-series-ripper.xml https://raw.githubusercontent.com/flixco6234/series-ripper/main/unraid/series-ripper.xml
-   ```
-   Then *Docker tab → Add Container → Template:* pick **series-ripper**
-   (under "User templates"). Don't use the old "Template repositories"
-   setting: current Unraid versions ignore it, so templates added there
-   never show up.
-6. In the template, set:
-   - **Optical drive - SCSI generic device**: the `/dev/sgN` from step 4. This
-     one is **required**; MakeMKV doesn't see the drive without it.
-   - **Optical drive - block device**: the `/dev/srN`.
-   - **TV library**: the folder holding your shows. Default
-     `/mnt/user/media/Serien` (`\\tower.local\media\Serien`).
-   - **MakeMKV key**: leave `BETA`, or paste a purchased key.
-   - **Temp (optional, under "Show more settings")**: leave empty unless you
-     want rips in progress somewhere else. See "Unraid share settings".
-   - Apply, then open the WebUI.
-
-The drive must be plugged in when the container starts, or Docker refuses to
-start it. A USB drive can come back with a different `/dev/sgN` after being
-re-plugged. If the container won't start, run `lsscsi -g` again and update the
-template.
-
-### Unraid share settings
-
-The container doesn't need a share of its own: it writes into your TV folder,
-and a hidden `.series-ripper-tmp` folder there holds rips in progress. Plex and
-Jellyfin ignore it. Files and folders it creates belong to `nobody:users` with
-open permissions, like files copied in over SMB, so you can rename or delete
-them from Windows.
-
-Check these on the share (Unraid → Shares → `media`):
-
-- **Minimum free space:** set it to at least the biggest single file you'll
-  rip, e.g. **100 GB** once you rip 4K UHD. Unraid can't split a file across
-  disks. If the disk it picked fills up mid-rip, that title fails. The app's
-  free-space check sees the whole array's free space, not the single disk's,
-  so it can't catch this case.
-- **Split level:** "Automatically split any directory as required" is fine.
-  If you prefer a show's episodes on one disk, use a split level that keeps
-  `Show/Season` folders together (level 1 or 2 for `media/Serien/...`).
-- **Cache / primary storage:** works either way. With the cache as primary
-  storage, rips land on the cache first and the Mover moves them later. Make
-  sure the cache has room for a whole disc's worth of rips.
-
-Optional **Temp** mapping: if you'd rather keep rips in progress off the
-array, map a folder on a cache-only share (e.g. `/mnt/cache/rip-temp`) to
-`/temp`. Each finished title is then *copied* to the TV folder, which takes a
-minute or two per UHD title, instead of being renamed instantly.
-
-### Without GitHub
-
-To build the image directly on the server, copy this folder to it, then:
-
-```bash
-docker build -t series-ripper:local .
-```
-
-Then edit `docker-compose.yml` (`image: series-ripper:local`, your devices and
-paths) and run `docker compose up -d`. On Unraid that needs the *Docker Compose
-Manager* plugin.
+`unraid/series-ripper.xml` (Unraid template) and `docker-compose.yml` are
+examples of a working setup.
 
 ## First run
 
@@ -166,7 +87,7 @@ Manager* plugin.
 2. **Manual Rip → Scan Disc.** A DVD takes a minute or two; Blu-ray and UHD
    discs can take several minutes. Check the table:
    - Tick/untick titles; **Episode #** renumbers itself.
-   - **Special?** puts a title in Season 00.
+   - **Special?** puts a title in Season 0.
    - The **Notes** column says why something was unticked or flagged.
 3. **Rip Selected.** Watch progress on the Dashboard. After the disc, "Next
    episode #" moves on by itself.
@@ -196,6 +117,10 @@ scans and decides:
   app checks there is enough free space, and skips the title with a log entry
   if not. The temp folder contains `.plexignore`/`.ignore` so Plex and
   Jellyfin don't pick up half-finished files.
+- **Unraid:** a file can't be split across array disks, and the free-space
+  check sees the whole array. Set the share's *Minimum free space* to at least
+  your largest rip (e.g. 100 GB for UHD), or a title can fail when its disk
+  fills up.
 - **Sleep bug:** the forum guide says all UHD-friendly drives can stop
   reading a disc that sat idle for about 2 minutes. Automatic Mode rips right
   after the scan, so it's not affected. If a manual rip fails after you
