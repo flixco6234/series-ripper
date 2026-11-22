@@ -1,24 +1,23 @@
 <?xml version="1.0"?>
 <!--
-  Unraid template for Series Ripper. Before using it, replace GITHUB_USER
-  (5 places) with the GitHub account the image is published under - see
-  README.md, "Install on Unraid".
+  Unraid template for Series Ripper. Image published by the GitHub Actions
+  workflow in this repository (github.com/flixco6234/series-ripper).
 -->
 <Container version="2">
   <Name>series-ripper</Name>
-  <Repository>ghcr.io/GITHUB_USER/series-ripper:latest</Repository>
-  <Registry>https://github.com/GITHUB_USER/series-ripper/pkgs/container/series-ripper</Registry>
+  <Repository>ghcr.io/flixco6234/series-ripper:latest</Repository>
+  <Registry>https://github.com/flixco6234/series-ripper/pkgs/container/series-ripper</Registry>
   <Network>bridge</Network>
   <MyIP/>
   <Shell>bash</Shell>
   <Privileged>false</Privileged>
-  <Support>https://github.com/GITHUB_USER/series-ripper/issues</Support>
-  <Project>https://github.com/GITHUB_USER/series-ripper</Project>
+  <Support>https://github.com/flixco6234/series-ripper/issues</Support>
+  <Project>https://github.com/flixco6234/series-ripper</Project>
   <Overview>Rips TV series from DVD, Blu-ray and 4K UHD discs with MakeMKV and names the episodes for Plex/Jellyfin (Show/Season 01/Show - S01E01.mkv). Web UI to scan a disc, review the proposed episode numbers and rip; optional Automatic Mode rips each inserted disc on its own and parks anything its episode detection isn't sure about in a review queue. Detects "Play All" titles, menus and extras. Fetches MakeMKV's free beta key automatically. 4K UHD needs a LibreDrive-compatible drive.</Overview>
   <Category>MediaApp:Video Tools:</Category>
   <WebUI>http://[IP]:[PORT:8080]/</WebUI>
-  <TemplateURL>https://raw.githubusercontent.com/GITHUB_USER/series-ripper/main/unraid/series-ripper.xml</TemplateURL>
-  <Icon>https://raw.githubusercontent.com/GITHUB_USER/series-ripper/main/unraid/icon.png</Icon>
+  <TemplateURL>https://raw.githubusercontent.com/flixco6234/series-ripper/main/unraid/series-ripper.xml</TemplateURL>
+  <Icon>https://raw.githubusercontent.com/flixco6234/series-ripper/main/unraid/icon.png</Icon>
   <ExtraParams/>
   <PostArgs/>
   <Requires>An optical drive (USB is fine) passed through as its SCSI generic device. Find it in the Unraid terminal with: lsscsi -g  (the last two columns of the optical drive's line are its /dev/srN and /dev/sgN). The drive must be connected when the container starts.</Requires>

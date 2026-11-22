@@ -1,6 +1,6 @@
 services:
   series-ripper:
-    image: ghcr.io/GITHUB_USER/series-ripper:latest   # or build locally: replace with `build: .`
+    image: ghcr.io/flixco6234/series-ripper:latest   # or build locally: replace with `build: .`
     container_name: series-ripper
     ports:
       - "8080:8080"
