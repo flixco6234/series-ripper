@@ -29,6 +29,16 @@ server version of the Windows "DVD Series Ripper" in the parent folder.
 - **Unraid-friendly:** temp files live on your share, not in `docker.img`, and
   files belong to `nobody:users`.
 
+> **AI disclaimer:** most of this project (code, tests and this README) was
+> written by an AI coding assistant, Anthropic's Claude in Claude Code, at the
+> direction of the repository owner. It has automated tests and was tried in
+> Docker; see [What has been tested](#what-has-been-tested-and-what-hasnt) for
+> what that does and doesn't cover. Treat it like any code you didn't write
+> yourself: read it before relying on it, and use it at your own risk. It comes
+> with no warranty. It only writes inside the folders you map to the container,
+> never overwrites an existing episode (a duplicate gets ` (1)` added to its
+> name), and only deletes its own temp files.
+
 ## What you need
 
 - Unraid (or any Docker host), x86-64.
