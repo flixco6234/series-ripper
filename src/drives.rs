@@ -247,9 +247,16 @@ pub async fn refresh(app: &Arc<App>) -> Result<usize, String> {
     }
     let mut args = base_args(app, &["-r"]);
     args.extend(["info".to_string(), "disc:9999".to_string()]);
-    let (out, _) = makemkv::run_collect(&cfg.makemkv_path, &args, makemkv::ENUM_TIMEOUT)
+    let (out, outcome) = makemkv::run_collect(&cfg.makemkv_path, &args, makemkv::ENUM_TIMEOUT)
         .await
         .map_err(|e| format!("couldn't run makemkvcon ({}): {e}", cfg.makemkv_path))?;
+    if outcome.timed_out {
+        app.log(
+            "error",
+            "MakeMKV didn't finish listing the drives within 2 minutes - a drive is probably hanging. \
+             Unplug and reconnect it (USB: also try another port or cable), then restart the container.",
+        );
+    }
     if let Some(v) = robot::version_from_output(&out) {
         *lock(&app.makemkv_version) = v;
     }

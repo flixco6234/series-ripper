@@ -95,19 +95,8 @@ async fn run() -> ExitCode {
     if let Err(e) = fsutil::prepare_temp_root(&app.env) {
         app.log("error", format!("Couldn't create the temp folder {}: {e}", app.env.temp_root.display()));
     }
-    // First drive listing; also tells us the MakeMKV version.
-    let drive_count = match drives::refresh(&app).await {
-        Ok(n) => n,
-        Err(e) => {
-            app.log("error", e);
-            0
-        }
-    };
-
-    tokio::spawn(license::run(app.clone()));
-    tokio::spawn(drives::watcher(app.clone()));
-    tokio::spawn(app.clone().state_pusher());
-
+    // The web UI comes up first: asking MakeMKV for the drives can take long
+    // (or hang on a misbehaving USB drive), and the UI must stay reachable.
     let port = app.env.port;
     let listener = match tokio::net::TcpListener::bind(("0.0.0.0", port)).await {
         Ok(l) => l,
@@ -116,23 +105,42 @@ async fn run() -> ExitCode {
             return ExitCode::FAILURE;
         }
     };
-    let version = lock(&app.makemkv_version).clone();
     app.log(
         "info",
         format!(
-            "Series Ripper {} web UI listening on port {port} ({}, {drive_count} drive(s), temp folder {}).",
+            "Series Ripper {} web UI listening on port {port} (temp folder {}). Looking for drives...",
             env!("CARGO_PKG_VERSION"),
-            if version.is_empty() { "MakeMKV version unknown" } else { &version },
             app.env.temp_root.display()
         ),
     );
-    if drive_count == 0 {
-        app.log(
-            "warn",
-            "MakeMKV sees no optical drive. Pass the drive's /dev/sgN (and /dev/srN) to the container - \
-             'lsscsi -g' on the host lists them.",
-        );
-    }
+
+    tokio::spawn(license::run(app.clone()));
+    tokio::spawn(app.clone().state_pusher());
+    let app2 = app.clone();
+    tokio::spawn(async move {
+        // First drive listing (also tells us the MakeMKV version), then watch.
+        match drives::refresh(&app2).await {
+            Ok(n) => {
+                let version = lock(&app2.makemkv_version).clone();
+                app2.log(
+                    "info",
+                    format!(
+                        "{}: {n} drive(s) found.",
+                        if version.is_empty() { "MakeMKV version unknown" } else { &version }
+                    ),
+                );
+                if n == 0 {
+                    app2.log(
+                        "warn",
+                        "MakeMKV sees no optical drive. Pass the drive's /dev/sgN (and /dev/srN) to the container - \
+                         'lsscsi -g' on the host lists them.",
+                    );
+                }
+            }
+            Err(e) => app2.log("error", e),
+        }
+        drives::watcher(app2).await;
+    });
 
     tokio::select! {
         r = axum::serve(listener, web::router(app.clone())) => {

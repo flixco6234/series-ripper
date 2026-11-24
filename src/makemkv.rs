@@ -92,7 +92,9 @@ where
             }
         }
         if tokio::time::timeout(Duration::from_secs(15), child.wait()).await.is_err() {
-            let _ = child.kill().await;
+            // A process stuck in the kernel on a hanging (USB) drive can't
+            // even be killed - don't wait for it forever.
+            let _ = tokio::time::timeout(Duration::from_secs(10), child.kill()).await;
         }
         return Ok(Outcome { exit_code: None, cancelled, timed_out });
     }
