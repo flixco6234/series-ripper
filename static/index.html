@@ -1,0 +1,225 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Series Ripper</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='14' fill='%234f8cff'/%3E%3Ccircle cx='16' cy='16' r='4' fill='%230f1420'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<header>
+  <h1>Series Ripper <span class="hint">DVD / Blu-ray / 4K UHD</span></h1>
+  <div class="status-pill"><span class="dot" id="statusDot"></span><span id="statusText">Connecting...</span></div>
+</header>
+
+<nav>
+  <button class="tab-btn active" data-view="dashboard">Dashboard</button>
+  <button class="tab-btn" data-view="rip">Rip</button>
+  <button class="tab-btn" data-view="review">Review Queue <span id="reviewBadge" class="badge pending" style="display:none"></span></button>
+  <button class="tab-btn" data-view="shows">Shows</button>
+  <button class="tab-btn" data-view="history">History</button>
+  <button class="tab-btn" data-view="settings">Settings</button>
+  <button class="tab-btn" data-view="logs">Log</button>
+</nav>
+
+<main>
+
+  <!-- Dashboard -->
+  <section class="view active" id="view-dashboard">
+    <div id="noShowsHint" class="banner" style="display:none">
+      No shows yet. Add the series you want to rip under <b>Shows</b>, then pick it for a drive below.
+    </div>
+    <div id="noDrivesHint" class="banner" style="display:none">
+      MakeMKV sees no optical drive. Pass the drive's <code>/dev/sgN</code> (required) and <code>/dev/srN</code>
+      to the container - <code>lsscsi -g</code> on the host lists them - then click Refresh Drives.
+    </div>
+    <div class="drive-grid" id="driveCards"></div>
+    <div class="card">
+      <div class="card-head">
+        <h2>Live Log</h2>
+        <button class="btn secondary small" id="refreshDrivesBtn">Refresh Drives</button>
+      </div>
+      <div class="log-box" id="dashLog"></div>
+    </div>
+    <p class="hint" id="makemkvInfo"></p>
+  </section>
+
+  <!-- Rip -->
+  <section class="view" id="view-rip">
+    <div class="card">
+      <h2>Scan a Disc</h2>
+      <div class="grid-3">
+        <div><label for="ripDrive">Drive</label><select id="ripDrive"></select></div>
+        <div><label for="ripShow">Show</label><select id="ripShow"></select></div>
+        <div class="align-end"><button class="btn" id="scanBtn">Scan Disc</button></div>
+      </div>
+      <p class="hint" id="ripShowInfo"></p>
+      <p class="hint" id="scanHint" style="display:none"></p>
+    </div>
+
+    <div class="card" id="ripResultsCard" style="display:none">
+      <h2>Titles</h2>
+      <p class="hint" id="ripDiscInfo"></p>
+      <p class="hint">Tick the titles to rip. Episode numbers renumber themselves; "Special" puts a title
+        in Season 0. 4K UHD drives can stop reading a disc that sits idle for a few minutes (LibreDrive
+        "sleep bug") - if a rip fails after a long review, eject and re-insert the disc.</p>
+      <div id="ripConflictBanner"></div>
+      <div class="table-wrap" id="ripTableWrap"></div>
+      <div class="btn-row">
+        <button class="btn" id="ripBtn">Rip Selected</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Review Queue -->
+  <section class="view" id="view-review">
+    <div class="card">
+      <h2>Discs Needing Review</h2>
+      <p class="hint">Automatic Mode parks a disc here instead of guessing when the detectors disagree or
+        flag a title it would rip (too long, unusual length, conflicting episode names). Titles that failed
+        to rip also land here for a retry. Put the disc in a drive before clicking "Rip These".</p>
+      <div id="reviewList"></div>
+    </div>
+  </section>
+
+  <!-- Shows -->
+  <section class="view" id="view-shows">
+    <div class="card">
+      <h2>Shows</h2>
+      <p class="hint">Each show remembers its season and the next episode number, so you can switch between
+        series (or rip two at once in two drives). "Next episode" moves on by itself after every disc.</p>
+      <div class="table-wrap">
+        <table class="rows-table" id="showsTable">
+          <thead><tr><th>Name</th><th>Season</th><th>Next episode</th><th>Next special</th>
+            <th>Library folder (optional)</th><th></th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <h2 style="margin-top:18px">Add a show</h2>
+      <div class="grid-4">
+        <div><label for="newShowName">Name</label><input type="text" id="newShowName" placeholder="e.g. Kare Kano"></div>
+        <div><label for="newShowSeason">Season</label><input type="number" id="newShowSeason" min="0" value="1"></div>
+        <div><label for="newShowNext">First episode on the next disc</label><input type="number" id="newShowNext" min="1" value="1"></div>
+        <div class="align-end"><button class="btn" id="addShowBtn">Add Show</button></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- History -->
+  <section class="view" id="view-history">
+    <div class="card">
+      <div class="card-head">
+        <h2>Rip History</h2>
+        <select id="historyShow" class="inline-select"></select>
+      </div>
+      <div class="table-wrap">
+        <table class="rows-table" id="historyTable">
+          <thead><tr><th>When</th><th>Show</th><th>Episode</th><th>Size</th><th>Length</th><th>Speed</th>
+            <th>Drive</th><th>Result</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <div class="btn-row"><button class="btn secondary small" id="historyMoreBtn">Load older entries</button></div>
+    </div>
+  </section>
+
+  <!-- Settings -->
+  <section class="view" id="view-settings">
+    <div class="card">
+      <h2>Library</h2>
+      <div class="grid-2">
+        <div><label for="cfgOutputDir">TV library folder (inside the container, keep it /output or below)</label><input type="text" id="cfgOutputDir"></div>
+        <div><label for="cfgFolderLayout">Folder layout</label>
+          <select id="cfgFolderLayout">
+            <option value="show_season">Show Name/Season 1/episode.mkv</option>
+            <option value="show">Show Name/episode.mkv (no season folder)</option>
+            <option value="flat">Everything directly in the library folder</option>
+          </select>
+        </div>
+        <div><label for="cfgPadSeason">Season folder name</label>
+          <select id="cfgPadSeason">
+            <option value="0">Season 1</option>
+            <option value="1">Season 01</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Episode Detection</h2>
+      <div class="checkline"><input type="checkbox" id="cfgDetectLengthFilter"><label for="cfgDetectLengthFilter">Mark titles under the minimum length as extras (Special, unticked)</label></div>
+      <div class="grid-2" style="margin-top:6px">
+        <div><label for="cfgMinLengthMin">Minimum episode length (minutes)</label><input type="number" id="cfgMinLengthMin" min="0"></div>
+        <div><label for="cfgLongWarnMin">Long-title warning above (minutes)</label><input type="number" id="cfgLongWarnMin" min="1"></div>
+      </div>
+      <div class="checkline" style="margin-top:10px"><input type="checkbox" id="cfgDetectPlayAll"><label for="cfgDetectPlayAll">Untick "Play All" titles (length equals several other titles combined)</label></div>
+      <div class="checkline"><input type="checkbox" id="cfgDetectLongWarn"><label for="cfgDetectLongWarn">Warn about long titles (may be several episodes combined)</label></div>
+      <div class="checkline"><input type="checkbox" id="cfgDetectCluster"><label for="cfgDetectCluster">Detect the typical episode length and flag outliers</label></div>
+      <div class="checkline"><input type="checkbox" id="cfgDetectNames"><label for="cfgDetectNames">Read episode numbers from the disc's title names (e.g. "Episode 3")</label></div>
+    </div>
+
+    <div class="card">
+      <h2>Automatic Mode</h2>
+      <p class="hint">Switched on per drive on the Dashboard. A drive in Automatic Mode scans every disc you
+        insert and rips it on its own, unless the detectors are unsure - then the disc goes to the Review
+        Queue instead.</p>
+      <div class="checkline"><input type="checkbox" id="cfgAutoEject"><label for="cfgAutoEject">Eject the disc after a successful rip</label></div>
+      <div class="checkline"><input type="checkbox" id="cfgSkipRipped"><label for="cfgSkipRipped">Skip a disc that was already ripped completely (same label and titles)</label></div>
+      <div class="checkline"><input type="checkbox" id="cfgAutomaticDefault"><label for="cfgAutomaticDefault">Turn Automatic Mode on for drives connected for the first time</label></div>
+      <div class="grid-2" style="margin-top:6px">
+        <div><label for="cfgPollInterval">Check drives every (seconds)</label><input type="number" id="cfgPollInterval" min="2"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Notifications</h2>
+      <div class="grid-2">
+        <div><label for="cfgNotifyFormat">Service</label>
+          <select id="cfgNotifyFormat">
+            <option value="off">Off</option>
+            <option value="discord">Discord webhook</option>
+            <option value="ntfy">ntfy (topic URL)</option>
+            <option value="gotify">Gotify (URL with ?token=...)</option>
+            <option value="json">Generic JSON POST (Home Assistant, n8n, ...)</option>
+          </select>
+        </div>
+        <div><label for="cfgNotifyUrl">URL</label><input type="text" id="cfgNotifyUrl" placeholder="https://ntfy.sh/my-ripper"></div>
+      </div>
+      <div class="checkline" style="margin-top:8px"><input type="checkbox" id="cfgNotifyDone"><label for="cfgNotifyDone">Disc finished</label></div>
+      <div class="checkline"><input type="checkbox" id="cfgNotifyReview"><label for="cfgNotifyReview">Disc needs review</label></div>
+      <div class="checkline"><input type="checkbox" id="cfgNotifyError"><label for="cfgNotifyError">Scan or rip failed</label></div>
+      <div class="btn-row"><button class="btn secondary small" id="notifyTestBtn">Save &amp; send a test</button></div>
+    </div>
+
+    <div class="card">
+      <h2>MakeMKV</h2>
+      <div class="grid-2">
+        <div><label for="cfgMakemkvPath">makemkvcon path</label><input type="text" id="cfgMakemkvPath"></div>
+        <div><label for="cfgExtraArgs">Extra makemkvcon options (advanced)</label><input type="text" id="cfgExtraArgs" placeholder="e.g. --cache=1024"></div>
+      </div>
+    </div>
+
+    <div class="btn-row sticky-save">
+      <button class="btn" id="saveSettingsBtn">Save Settings</button>
+      <span id="settingsSavedMsg" class="hint" style="display:none">Saved.</span>
+    </div>
+  </section>
+
+  <!-- Log -->
+  <section class="view" id="view-logs">
+    <div class="card">
+      <div class="card-head">
+        <h2>Action Log</h2>
+        <div class="checkline"><input type="checkbox" id="showDebug"><label for="showDebug">Show MakeMKV messages</label></div>
+      </div>
+      <div class="log-box tall" id="fullLog"></div>
+      <div class="btn-row"><button class="btn secondary small" id="loadMoreLogBtn">Load older entries</button></div>
+    </div>
+  </section>
+
+</main>
+
+<script src="/static/app.js"></script>
+</body>
+</html>

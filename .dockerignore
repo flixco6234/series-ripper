@@ -1,11 +1,11 @@
-**/__pycache__/
-**/*.pyc
 .git
 .github
 .gitignore
+.gitattributes
 README.md
 docker-compose.yml
 unraid
 tests
+target
 config
 output

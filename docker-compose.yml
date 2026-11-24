@@ -9,13 +9,18 @@ services:
       - ./output:/output            # your TV library (Unraid: /mnt/user/media/Serien)
       # - /mnt/cache/rip-temp:/temp # optional: rips in progress go here instead
     devices:
-      # Find yours with `lsscsi -g` (last two columns of the optical drive's line).
+      # Find yours with `lsscsi -g` (last two columns of each optical drive's line).
       # The /dev/sgN one is required - MakeMKV doesn't see the drive without it.
+      # /dev/srN gives instant disc detection and eject.
       - /dev/sg2:/dev/sg2
       - /dev/sr0:/dev/sr0
+      # A second drive: add its pair too.
+      # - /dev/sg3:/dev/sg3
+      # - /dev/sr1:/dev/sr1
     environment:
       - MAKEMKV_KEY=BETA            # or your purchased key
       - PUID=99
       - PGID=100
       - UMASK=000
+      # - UI_PASSWORD=change-me     # optional password for the web UI
     restart: unless-stopped
